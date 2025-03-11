@@ -32,7 +32,7 @@ default: compile
 
 # clone openwrt
 $(OPENWRT_DIR): .stamp-openwrt-removed
-	git clone $(OPENWRT_SRC) $(OPENWRT_DIR)
+	git clone --depth 1 --branch $(OPENWRT_COMMIT) $(OPENWRT_SRC) $(OPENWRT_DIR)
 	cd $(OPENWRT_DIR); git checkout $(OPENWRT_COMMIT)
 	ln -sf $(TOP_DIR)/patches $(OPENWRT_DIR)/
 	ln -sf $(TOP_DIR)/files   $(OPENWRT_DIR)/
