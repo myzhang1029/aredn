@@ -66,8 +66,8 @@ index b16c5d9..2659f9d 100644
 @@ -146,9 +146,11 @@ endif
  
  ifneq ($(CONFIG_CCACHE)$(CONFIG_SDK),)
- $(foreach tool, $(filter-out zstd zlib xz pkgconf patch ninja meson libressl expat cmake,$(tools-y)), $(eval $(curdir)/$(tool)/compile += $(curdir)/ccache/compile))
 +ifneq ($(CONFIG_CCACHE),sccache)
+ $(foreach tool, $(filter-out zstd zlib xz pkgconf patch ninja meson libressl expat cmake,$(tools-y)), $(eval $(curdir)/$(tool)/compile += $(curdir)/ccache/compile))
  tools-y += ccache
  $(curdir)/ccache/compile := $(curdir)/cmake/compile
  endif
