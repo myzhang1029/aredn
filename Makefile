@@ -36,6 +36,7 @@ $(OPENWRT_DIR): .stamp-openwrt-removed
 	cd $(OPENWRT_DIR); git checkout $(OPENWRT_COMMIT)
 	ln -sf $(TOP_DIR)/patches $(OPENWRT_DIR)/
 	ln -sf $(TOP_DIR)/files   $(OPENWRT_DIR)/
+	cd $(OPENWRT_DIR); patch -p1 < $(TOP_DIR)/patches/901-sccache.patch
 	touch .stamp-openwrt-cleaned
 	rm -f .stamp-unpatched
 
