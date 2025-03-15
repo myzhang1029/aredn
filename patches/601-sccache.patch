@@ -1,0 +1,643 @@
+Index: b/include/cmake.mk
+===================================================================
+--- a/include/cmake.mk
++++ b/include/cmake.mk
+@@ -36,7 +36,11 @@ ifeq ($(CONFIG_CCACHE),)
+  CMAKE_HOST_C_COMPILER:=$(HOSTCC)
+  CMAKE_HOST_CXX_COMPILER:=$(HOSTCXX)
+ else
++  ifeq ($(CONFIG_CCACHE),sccache)
++  CCACHE:=sccache
++  else
+   CCACHE:=$(STAGING_DIR_HOST)/bin/ccache
++  endif
+   CMAKE_C_COMPILER_LAUNCHER:=$(CCACHE)
+   CMAKE_CXX_COMPILER_LAUNCHER:=$(CCACHE)
+   CMAKE_C_COMPILER:=$(TARGET_CC_NOCACHE)
+Index: b/package/libs/openssl/Makefile
+===================================================================
+--- a/package/libs/openssl/Makefile
++++ b/package/libs/openssl/Makefile
+@@ -64,9 +64,11 @@ include $(INCLUDE_DIR)/package.mk
+ include $(INCLUDE_DIR)/openssl-module.mk
+ 
+ ifneq ($(CONFIG_CCACHE),)
++ifneq ($(CONFIG_CCACHE),sccache)
+ HOSTCC=$(HOSTCC_NOCACHE)
+ HOSTCXX=$(HOSTCXX_NOCACHE)
+ endif
++endif
+ 
+ define Package/openssl/Default
+   TITLE:=Open source SSL toolkit
+Index: b/tools/Makefile
+===================================================================
+--- a/tools/Makefile
++++ b/tools/Makefile
+@@ -145,10 +145,12 @@ else
+ endif
+ 
+ ifneq ($(CONFIG_CCACHE)$(CONFIG_SDK),)
++ifneq ($(CONFIG_CCACHE),sccache)
+ $(foreach tool, $(filter-out zstd zlib xz pkgconf patch ninja meson libressl expat cmake,$(tools-y)), $(eval $(curdir)/$(tool)/compile += $(curdir)/ccache/compile))
+ tools-y += ccache
+ $(curdir)/ccache/compile := $(curdir)/cmake/compile
+ endif
++endif
+ 
+ # in case there is no patch tool on the host we need to make patch tool a
+ # dependency for tools which have patches directory
+Index: b/tools/expat/Makefile
+===================================================================
+--- a/tools/expat/Makefile
++++ b/tools/expat/Makefile
+@@ -19,7 +19,9 @@ HOST_BUILD_PARALLEL:=1
+ 
+ include $(INCLUDE_DIR)/host-build.mk
+ 
++ifneq ($(CONFIG_CCACHE),sccache)
+ HOSTCC := $(HOSTCC_NOCACHE)
++endif
+ 
+ HOST_CONFIGURE_ARGS += \
+ 	--disable-shared \
+Index: b/tools/sed/Makefile
+===================================================================
+--- a/tools/sed/Makefile
++++ b/tools/sed/Makefile
+@@ -18,8 +18,10 @@ export SED:=
+ 
+ HOST_BUILD_PARALLEL:=1
+ 
++ifneq ($(CONFIG_CCACHE),sccache)
+ HOSTCC := $(HOSTCC_NOCACHE)
+ HOSTCXX := $(HOSTCXX_NOCACHE)
++endif
+ 
+ include $(INCLUDE_DIR)/host-build.mk
+ 
+Index: b/feeds/packages/lang/rust/Makefile
+===================================================================
+--- a/feeds/packages/lang/rust/Makefile
++++ b/feeds/packages/lang/rust/Makefile
+@@ -47,6 +47,16 @@ endef
+ RUST_UNINSTALL:=$(STAGING_DIR)/host/lib/rustlib/uninstall.sh
+ 
+ # Target Flags
++ifeq ($(CONFIG_CCACHE),sccache)
++TARGET_CONFIGURE_ARGS = \
++	--set=target.$(RUSTC_TARGET_ARCH).ar=$(TARGET_AR) \
++	--set=target.$(RUSTC_TARGET_ARCH).cc=$(TARGET_CC) \
++	--set=target.$(RUSTC_TARGET_ARCH).cxx=$(TARGET_CXX) \
++	--set=target.$(RUSTC_TARGET_ARCH).linker=$(TARGET_CC) \
++	--set=target.$(RUSTC_TARGET_ARCH).ranlib=$(TARGET_RANLIB) \
++	--set=target.$(RUSTC_TARGET_ARCH).crt-static=false \
++	$(if $(CONFIG_USE_MUSL),--set=target.$(RUSTC_TARGET_ARCH).musl-root=$(TOOLCHAIN_ROOT_DIR))
++else
+ TARGET_CONFIGURE_ARGS = \
+ 	--set=target.$(RUSTC_TARGET_ARCH).ar=$(TARGET_AR) \
+ 	--set=target.$(RUSTC_TARGET_ARCH).cc=$(TARGET_CC_NOCACHE) \
+@@ -55,6 +65,7 @@ TARGET_CONFIGURE_ARGS = \
+ 	--set=target.$(RUSTC_TARGET_ARCH).ranlib=$(TARGET_RANLIB) \
+ 	--set=target.$(RUSTC_TARGET_ARCH).crt-static=false \
+ 	$(if $(CONFIG_USE_MUSL),--set=target.$(RUSTC_TARGET_ARCH).musl-root=$(TOOLCHAIN_ROOT_DIR))
++endif
+ 
+ # CARGO_HOME is an environmental
+ HOST_CONFIGURE_VARS += CARGO_HOME="$(CARGO_HOME)"
+Index: b/tools/bzip2/Makefile
+===================================================================
+--- a/tools/bzip2/Makefile
++++ b/tools/bzip2/Makefile
+@@ -24,7 +24,9 @@ HOST_BUILD_PARALLEL:=1
+ include $(INCLUDE_DIR)/host-build.mk
+ include $(INCLUDE_DIR)/cmake.mk
+ 
++ifneq ($(CONFIG_CCACHE),sccache)
+ HOSTCC := $(HOSTCC_NOCACHE)
++endif
+ HOST_CFLAGS += $(HOST_FPIC)
+ 
+ CMAKE_HOST_OPTIONS += -DENABLE_EXAMPLES=off
+Index: b/tools/flock/Makefile
+===================================================================
+--- a/tools/flock/Makefile
++++ b/tools/flock/Makefile
+@@ -12,8 +12,10 @@ PKG_RELEASE := 1
+ 
+ include $(INCLUDE_DIR)/host-build.mk
+ 
++ifneq ($(CONFIG_CCACHE),sccache)
+ HOSTCC := $(HOSTCC_NOCACHE)
+ HOSTCXX := $(HOSTCXX_NOCACHE)
++endif
+ 
+ define Host/Compile
+ 	mkdir -p $(HOST_BUILD_DIR)
+Index: b/tools/libdeflate/Makefile
+===================================================================
+--- a/tools/libdeflate/Makefile
++++ b/tools/libdeflate/Makefile
+@@ -18,12 +18,21 @@ include $(INCLUDE_DIR)/host-build.mk
+ 
+ DECOMPRESS_CMD:=$(STAGING_DIR_HOST)/bin/gzip -dc $(DL_DIR)/$(PKG_SOURCE) |
+ 
++ifeq ($(CONFIG_CCACHE),sccache)
++define Host/Compile
++	$(HOSTCC) $(HOST_CFLAGS) $(HOST_LDFLAGS) \
++	$(HOST_BUILD_DIR)/lib/*{,/*}.c \
++	$(HOST_BUILD_DIR)/programs/{gzip,prog_util,tgetopt}.c \
++	-o $(HOST_BUILD_DIR)/libdeflate-gzip
++endef
++else
+ define Host/Compile
+ 	$(HOSTCC_NOCACHE) $(HOST_CFLAGS) $(HOST_LDFLAGS) \
+ 	$(HOST_BUILD_DIR)/lib/*{,/*}.c \
+ 	$(HOST_BUILD_DIR)/programs/{gzip,prog_util,tgetopt}.c \
+ 	-o $(HOST_BUILD_DIR)/libdeflate-gzip
+ endef
++endif
+ 
+ define Host/Install
+ 	$(INSTALL_BIN) $(HOST_BUILD_DIR)/libdeflate-gzip $(STAGING_DIR_HOST)/bin/
+Index: b/tools/libressl/Makefile
+===================================================================
+--- a/tools/libressl/Makefile
++++ b/tools/libressl/Makefile
+@@ -22,7 +22,9 @@ HOST_BUILD_PARALLEL:=1
+ 
+ include $(INCLUDE_DIR)/host-build.mk
+ 
++ifneq ($(CONFIG_CCACHE),sccache)
+ HOSTCC := $(HOSTCC_NOCACHE)
++endif
+ 
+ HOST_CFLAGS += $(HOST_FPIC)
+ 
+Index: b/tools/ninja/Makefile
+===================================================================
+--- a/tools/ninja/Makefile
++++ b/tools/ninja/Makefile
+@@ -10,6 +10,18 @@ PKG_HASH:=821bdff48a3f683bc4bb3b6f0b5fe7
+ 
+ include $(INCLUDE_DIR)/host-build.mk
+ 
++ifeq ($(CONFIG_CCACHE),sccache)
++define Host/Configure
++	cd $(HOST_BUILD_DIR) && \
++		$(HOST_MAKE_VARS) \
++		CXX="$(HOSTCXX)" \
++		$(STAGING_DIR_HOST)/bin/$(PYTHON) configure.py \
++			$(if $(shell $(STAGING_DIR_HOST)/bin/ninja --version),,--bootstrap) \
++			--no-rebuild \
++			--verbose
++	-$(Host/Install)
++endef
++else
+ define Host/Configure
+ 	cd $(HOST_BUILD_DIR) && \
+ 		$(HOST_MAKE_VARS) \
+@@ -20,6 +32,7 @@ define Host/Configure
+ 			--verbose
+ 	-$(Host/Install)
+ endef
++endif
+ 
+ define Host/Compile
+ 	+$(NINJA) -C $(HOST_BUILD_DIR)
+Index: b/tools/patch/Makefile
+===================================================================
+--- a/tools/patch/Makefile
++++ b/tools/patch/Makefile
+@@ -19,8 +19,10 @@ HOST_BUILD_PARALLEL := 1
+ 
+ include $(INCLUDE_DIR)/host-build.mk
+ 
++ifneq ($(CONFIG_CCACHE),sccache)
+ HOSTCC := $(HOSTCC_NOCACHE)
+ HOSTCXX := $(HOSTCXX_NOCACHE)
++endif
+ 
+ define Host/Uninstall
+ 	-$(call Host/Compile/Default,uninstall)
+Index: b/tools/pkgconf/Makefile
+===================================================================
+--- a/tools/pkgconf/Makefile
++++ b/tools/pkgconf/Makefile
+@@ -20,7 +20,9 @@ include $(INCLUDE_DIR)/meson.mk
+ 
+ unexport PKG_CONFIG
+ 
++ifneq ($(CONFIG_CCACHE),sccache)
+ HOSTCC := $(HOSTCC_NOCACHE)
++endif
+ 
+ MESON_HOST_ARGS += \
+ 	-Ddefault_library=static \
+Index: b/tools/tar/Makefile
+===================================================================
+--- a/tools/tar/Makefile
++++ b/tools/tar/Makefile
+@@ -18,8 +18,10 @@ HOST_BUILD_PARALLEL:=1
+ 
+ include $(INCLUDE_DIR)/host-build.mk
+ 
++ifneq ($(CONFIG_CCACHE),sccache)
+ HOSTCC := $(HOSTCC_NOCACHE)
+ HOSTCXX := $(HOSTCXX_NOCACHE)
++endif
+ 
+ HOST_CONFIGURE_ARGS += \
+ 	--without-posix-acls \
+Index: b/tools/xz/Makefile
+===================================================================
+--- a/tools/xz/Makefile
++++ b/tools/xz/Makefile
+@@ -19,8 +19,10 @@ HOST_BUILD_PARALLEL:=1
+ 
+ include $(INCLUDE_DIR)/host-build.mk
+ 
++ifneq ($(CONFIG_CCACHE),sccache)
+ HOSTCC := $(HOSTCC_NOCACHE)
+ HOSTCXX := $(HOSTCXX_NOCACHE)
++endif
+ 
+ HOST_CONFIGURE_ARGS += \
+ 	--enable-static=yes \
+Index: b/tools/zlib/Makefile
+===================================================================
+--- a/tools/zlib/Makefile
++++ b/tools/zlib/Makefile
+@@ -23,7 +23,9 @@ HOST_BUILD_PARALLEL:=1
+ 
+ include $(INCLUDE_DIR)/host-build.mk
+ 
++ifneq ($(CONFIG_CCACHE),sccache)
+ HOSTCC := $(HOSTCC_NOCACHE)
++endif
+ HOST_CFLAGS += $(HOST_FPIC)
+ 
+ HOST_CONFIGURE_ARGS = \
+Index: b/tools/zstd/Makefile
+===================================================================
+--- a/tools/zstd/Makefile
++++ b/tools/zstd/Makefile
+@@ -15,7 +15,9 @@ HOST_BUILD_PARALLEL:=1
+ 
+ include $(INCLUDE_DIR)/host-build.mk
+ 
++ifneq ($(CONFIG_CCACHE),sccache)
+ HOSTCC:= $(HOSTCC_NOCACHE)
++endif
+ 
+ HOST_CFLAGS += $(HOST_FPIC)
+ 
+Index: b/feeds/packages/devel/scons/scons.mk
+===================================================================
+--- a/feeds/packages/devel/scons/scons.mk
++++ b/feeds/packages/devel/scons/scons.mk
+@@ -1,8 +1,15 @@
+ export PLATFORM=posix
+ 
++ifeq ($(CONFIG_CCACHE),sccache)
++SCONS_VARS = \
++	CC="$(TARGET_CC)" \
++	CXX="$(TARGET_CXX)"
++else
+ SCONS_VARS = \
+ 	CC="$(TARGET_CC_NOCACHE)" \
+-	CXX="$(TARGET_CXX_NOCACHE)" \
++	CXX="$(TARGET_CXX_NOCACHE)"
++endif
++SCONS_VARS += \
+ 	CFLAGS="$(TARGET_CFLAGS) $(EXTRA_CFLAGS)" \
+ 	CXXFLAGS="$(TARGET_CXXFLAGS) $(EXTRA_CXXFLAGS)" \
+ 	CPPFLAGS="$(TARGET_CPPFLAGS) $(EXTRA_CPPFLAGS)" \
+Index: b/feeds/packages/lang/golang/golang/Makefile
+===================================================================
+--- a/feeds/packages/lang/golang/golang/Makefile
++++ b/feeds/packages/lang/golang/golang/Makefile
+@@ -250,12 +250,21 @@ endif
+ 
+ $(eval $(call GoCompiler/AddProfile,Host,$(HOST_BUILD_DIR),$(HOST_GO_PREFIX),$(HOST_GO_VERSION_ID),$(GO_HOST_OS_ARCH),$(HOST_GO_INSTALL_SUFFIX)))
+ 
++ifeq ($(CONFIG_CCACHE),sccache)
++HOST_GO_VARS= \
++	GOHOSTARCH="$(GO_HOST_ARCH)" \
++	GOCACHE="$(GO_BUILD_CACHE_DIR)" \
++	GOENV=off \
++	CC="$(HOSTCC)" \
++	CXX="$(HOSTCXX)"
++else
+ HOST_GO_VARS= \
+ 	GOHOSTARCH="$(GO_HOST_ARCH)" \
+ 	GOCACHE="$(GO_BUILD_CACHE_DIR)" \
+ 	GOENV=off \
+ 	CC="$(HOSTCC_NOCACHE)" \
+ 	CXX="$(HOSTCXX_NOCACHE)"
++endif
+ 
+ define Host/Configure
+ 	$(call GoCompiler/Bootstrap/CheckHost,$(BOOTSTRAP_GO_VALID_OS_ARCH))
+Index: b/feeds/packages/lang/rust/rust-host-build.mk
+===================================================================
+--- a/feeds/packages/lang/rust/rust-host-build.mk
++++ b/feeds/packages/lang/rust/rust-host-build.mk
+@@ -15,10 +15,17 @@ ifeq ($(origin RUST_INCLUDE_DIR),undefin
+ endif
+ include $(RUST_INCLUDE_DIR)/rust-values.mk
+ 
++ifeq ($(CONFIG_CCACHE),sccache)
++CARGO_HOST_VARS= \
++	$(CARGO_HOST_CONFIG_VARS) \
++	CC=$(HOSTCC) \
++	MAKEFLAGS="$(HOST_JOBS)"
++else
+ CARGO_HOST_VARS= \
+ 	$(CARGO_HOST_CONFIG_VARS) \
+ 	CC=$(HOSTCC_NOCACHE) \
+ 	MAKEFLAGS="$(HOST_JOBS)"
++endif
+ 
+ # $(1) path to the package (optional)
+ # $(2) additional arguments to cargo (optional)
+Index: b/feeds/packages/lang/rust/rust-package.mk
+===================================================================
+--- a/feeds/packages/lang/rust/rust-package.mk
++++ b/feeds/packages/lang/rust/rust-package.mk
+@@ -15,10 +15,17 @@ ifeq ($(origin RUST_INCLUDE_DIR),undefin
+ endif
+ include $(RUST_INCLUDE_DIR)/rust-values.mk
+ 
++ifeq ($(CONFIG_CCACHE),sccache)
++CARGO_PKG_VARS= \
++	$(CARGO_PKG_CONFIG_VARS) \
++	CC=$(HOSTCC) \
++	MAKEFLAGS="$(PKG_JOBS)"
++else
+ CARGO_PKG_VARS= \
+ 	$(CARGO_PKG_CONFIG_VARS) \
+ 	CC=$(HOSTCC_NOCACHE) \
+ 	MAKEFLAGS="$(PKG_JOBS)"
++endif
+ 
+ # $(1) path to the package (optional)
+ # $(2) additional arguments to cargo (optional)
+Index: b/feeds/packages/lang/rust/rust-values.mk
+===================================================================
+--- a/feeds/packages/lang/rust/rust-values.mk
++++ b/feeds/packages/lang/rust/rust-values.mk
+@@ -86,6 +86,24 @@ CARGO_HOST_CONFIG_VARS= \
+ 
+ CARGO_HOST_PROFILE:=release
+ 
++ifeq ($(CONFIG_CCACHE),sccache)
++CARGO_PKG_CONFIG_VARS= \
++	$(RUST_SCCACHE_VARS) \
++	CARGO_BUILD_TARGET=$(RUSTC_TARGET_ARCH) \
++	CARGO_HOME=$(CARGO_HOME) \
++	CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 \
++	CARGO_PROFILE_RELEASE_DEBUG=false \
++	CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS=false \
++	CARGO_PROFILE_RELEASE_LTO=true \
++	CARGO_PROFILE_RELEASE_OPT_LEVEL=z \
++	CARGO_PROFILE_RELEASE_OVERFLOW_CHECKS=true \
++	CARGO_PROFILE_RELEASE_PANIC=unwind \
++	CARGO_PROFILE_RELEASE_RPATH=false \
++	CARGO_TARGET_$(subst -,_,$(call toupper,$(RUSTC_TARGET_ARCH)))_LINKER=$(TARGET_CC) \
++	RUSTFLAGS="$(CARGO_RUSTFLAGS)" \
++	TARGET_CC=$(TARGET_CC) \
++	TARGET_CFLAGS="$(TARGET_CFLAGS) $(RUSTC_CFLAGS)"
++else
+ CARGO_PKG_CONFIG_VARS= \
+ 	$(RUST_SCCACHE_VARS) \
+ 	CARGO_BUILD_TARGET=$(RUSTC_TARGET_ARCH) \
+@@ -102,6 +120,7 @@ CARGO_PKG_CONFIG_VARS= \
+ 	RUSTFLAGS="$(CARGO_RUSTFLAGS)" \
+ 	TARGET_CC=$(TARGET_CC_NOCACHE) \
+ 	TARGET_CFLAGS="$(TARGET_CFLAGS) $(RUSTC_CFLAGS)"
++endif
+ 
+ CARGO_PKG_PROFILE:=$(if $(CONFIG_DEBUG),dev,release)
+ 
+Index: b/feeds/packages/libs/icu/Makefile
+===================================================================
+--- a/feeds/packages/libs/icu/Makefile
++++ b/feeds/packages/libs/icu/Makefile
+@@ -78,6 +78,29 @@ define Package/icu-data-tools/descriptio
+ endef
+ 
+ CONFIGURE_CMD:= ./runConfigureICU
++ifeq ($(CONFIG_CCACHE),sccache)
++CONFIGURE_ARGS:= \
++	Linux/gcc \
++	CC="$(TARGET_CC)" \
++	CXX="$(TARGET_CXX)" \
++	--target=$(GNU_TARGET_NAME) \
++	--host=$(GNU_TARGET_NAME) \
++	--build=$(GNU_HOST_NAME) \
++	--disable-debug \
++	--enable-release \
++	--enable-shared \
++	--enable-static \
++	--enable-draft \
++	--enable-renaming \
++	--disable-tracing \
++	--disable-extras \
++	--enable-dyload \
++	--with-data-packaging=archive \
++	--disable-tests \
++	--disable-samples \
++	--with-cross-build="$(STAGING_DIR_HOSTPKG)/share/icu/$(PKG_VERSION)" \
++	--prefix=/usr
++else
+ CONFIGURE_ARGS:= \
+ 	Linux/gcc \
+ 	CC="$(TARGET_CC_NOCACHE)" \
+@@ -99,6 +122,7 @@ CONFIGURE_ARGS:= \
+ 	--disable-samples \
+ 	--with-cross-build="$(STAGING_DIR_HOSTPKG)/share/icu/$(PKG_VERSION)" \
+ 	--prefix=/usr
++endif
+ 
+ HOST_CONFIGURE_CMD:= ./runConfigureICU
+ HOST_CONFIGURE_VARS:=
+Index: b/feeds/packages/libs/openblas/Makefile
+===================================================================
+--- a/feeds/packages/libs/openblas/Makefile
++++ b/feeds/packages/libs/openblas/Makefile
+@@ -89,11 +89,19 @@ else
+ OPENBLAS_BINARY:=32
+ endif
+ 
++ifeq ($(CONFIG_CCACHE),sccache)
++MAKE_FLAGS += \
++	CC=$(TARGET_CC) \
++	CXX=$(TARGET_CXX) \
++	HOSTCC=$(HOSTCC)
++else
+ MAKE_FLAGS += \
+-	CROSS=1 \
+ 	CC=$(TARGET_CC_NOCACHE) \
+ 	CXX=$(TARGET_CXX_NOCACHE) \
+-	HOSTCC=$(HOSTCC_NOCACHE) \
++	HOSTCC=$(HOSTCC_NOCACHE)
++endif
++MAKE_FLAGS += \
++	CROSS=1 \
+ 	CROSS_SUFFIX=$(TARGET_CROSS) \
+ 	BINARY=$(OPENBLAS_BINARY) \
+ 	MAKE_NB_JOBS=-1 \
+Index: b/feeds/packages/net/isc-dhcp/Makefile
+===================================================================
+--- a/feeds/packages/net/isc-dhcp/Makefile
++++ b/feeds/packages/net/isc-dhcp/Makefile
+@@ -190,6 +190,29 @@ endif
+ 
+ TARGET_CFLAGS += -fcommon
+ 
++ifeq ($(CONFIG_CCACHE),sccache)
++define Build/Compile
++	$(MAKE) -C $(PKG_BUILD_DIR)			\
++		BUILD_CC="$(HOSTCC)"		\
++		CROSS_CC="$(TARGET_CC)"			\
++		TARGET_AR="$(TARGET_AR)"		\
++		TARGET_RANLIB="$(TARGET_RANLIB)"	\
++		host_alias="$(GNU_TARGET_NAME)"		\
++		target_alias="$(GNU_TARGET_NAME)"	\
++		build_alias="$(GNU_HOST_NAME)"		\
++		all
++	$(MAKE) -C $(PKG_BUILD_DIR)			\
++		DESTDIR="$(PKG_INSTALL_DIR)"		\
++		BUILD_CC="$(HOSTCC)"		\
++		CROSS_CC="$(TARGET_CC)"			\
++		TARGET_AR="$(TARGET_AR)"		\
++		TARGET_RANLIB="$(TARGET_RANLIB)"	\
++		host_alias="$(GNU_TARGET_NAME)"		\
++		target_alias="$(GNU_TARGET_NAME)"	\
++		build_alias="$(GNU_HOST_NAME)"		\
++		install-exec
++endef
++else
+ define Build/Compile
+ 	$(MAKE) -C $(PKG_BUILD_DIR)			\
+ 		BUILD_CC="$(HOSTCC_NOCACHE)"		\
+@@ -211,6 +234,7 @@ define Build/Compile
+ 		build_alias="$(GNU_HOST_NAME)"		\
+ 		install-exec
+ endef
++endif
+ 
+ define Package/isc-dhcp-relay-$(BUILD_VARIANT)/install
+ 	$(INSTALL_DIR) $(1)/usr/sbin
+Index: b/feeds/packages/net/squid/Makefile
+===================================================================
+--- a/feeds/packages/net/squid/Makefile
++++ b/feeds/packages/net/squid/Makefile
+@@ -67,8 +67,14 @@ define Package/squid-mod-cachemgr
+   TITLE:=Web based proxy manager and reporting tool
+ endef
+ 
++ifeq ($(CONFIG_CCACHE),sccache)
++CONFIGURE_ARGS += \
++	BUILDCXX=$(HOSTCXX)
++else
++CONFIGURE_ARGS += \
++	BUILDCXX=$(HOSTCXX_NOCACHE)
++endif
+ CONFIGURE_ARGS += \
+-	BUILDCXX=$(HOSTCXX_NOCACHE) \
+ 	BUILDCXXFLAGS="$(HOST_CXXFLAGS) $(HOST_CPPFLAGS) -std=c++17" \
+ 	--datadir=/usr/share/squid \
+ 	--libexecdir=/usr/lib/squid \
+Index: b/feeds/packages/utils/bossa/Makefile
+===================================================================
+--- a/feeds/packages/utils/bossa/Makefile
++++ b/feeds/packages/utils/bossa/Makefile
+@@ -31,6 +31,18 @@ define Package/bossa/description
+  easy-to-use, open source utility to replace Atmel's SAM-BA software.
+ endef
+ 
++ifeq ($(CONFIG_CCACHE),sccache)
++define Build/Compile
++	$(MAKE) -C $(PKG_BUILD_DIR) bin/bossac \
++    OS="Linux" \
++    CC="$(TARGET_CC)" \
++    CXX="$(TARGET_CXX)" \
++    CFLAGS="$(TARGET_CFLAGS) $(EXTRA_CFLAGS)" \
++    CXXFLAGS="$(TARGET_CXXFLAGS) $(EXTRA_CXXFLAGS)" \
++    CPPFLAGS="$(TARGET_CPPFLAGS) $(EXTRA_CPPFLAGS)" \
++    LDFLAGS="$(TARGET_LDFLAGS) $(EXTRA_LDFLAGS)"
++endef
++else
+ define Build/Compile
+ 	$(MAKE) -C $(PKG_BUILD_DIR) bin/bossac \
+     OS="Linux" \
+@@ -41,6 +53,7 @@ define Build/Compile
+     CPPFLAGS="$(TARGET_CPPFLAGS) $(EXTRA_CPPFLAGS)" \
+     LDFLAGS="$(TARGET_LDFLAGS) $(EXTRA_LDFLAGS)"
+ endef
++endif
+ 
+ define Package/bossa/install
+ 	$(INSTALL_DIR) $(1)/usr/bin
+Index: b/feeds/packages/utils/gnuplot/Makefile
+===================================================================
+--- a/feeds/packages/utils/gnuplot/Makefile
++++ b/feeds/packages/utils/gnuplot/Makefile
+@@ -36,10 +36,17 @@ CONFIGURE_VARS += ac_cv_have_x="have_x=n
+ # to CC in order to avoid dependency on libstdcpp. This is 
+ # horrible, but 'DEPENDS:=+libstdcpp' does not work for some
+ # reason. 
++ifeq ($(CONFIG_CCACHE),sccache)
++define Build/Compile
++	$(MAKE) -C $(PKG_BUILD_DIR) \
++		CXX="$(TARGET_CC)"  
++endef
++else
+ define Build/Compile
+ 	$(MAKE) -C $(PKG_BUILD_DIR) \
+ 		CXX="$(TARGET_CC_NOCACHE)"  
+ endef
++endif
+ 
+ define Package/gnuplot/install
+ 	$(INSTALL_DIR) $(1)/usr/bin
+Index: b/feeds/routing/cjdns/Makefile
+===================================================================
+--- a/feeds/routing/cjdns/Makefile
++++ b/feeds/routing/cjdns/Makefile
+@@ -74,6 +74,25 @@ ifneq ($(CONFIG_USE_UCLIBC),)
+ PKG_DO_VARS+= UCLIBC=1
+ endif
+ 
++ifeq ($(CONFIG_CCACHE),sccache)
++define Build/Compile
++	$(INSTALL_DIR) $(PKG_BUILD_DIR)/tmp
++	(cd $(PKG_BUILD_DIR) && \
++	CROSS="true" \
++	CC="$(TARGET_CC)" \
++	AR="$(TARGET_AR)" \
++	RANLIB="$(TARGET_RANLIB)" \
++	CFLAGS="$(TARGET_CFLAGS) -U_FORTIFY_SOURCE -Wno-error=array-bounds -Wno-error=stringop-overflow -Wno-error=stringop-overread" \
++	LDFLAGS="$(TARGET_LDFLAGS)" \
++	SYSTEM="linux" \
++	TARGET_ARCH="$(CONFIG_ARCH)" \
++	SSP_SUPPORT="$(CONFIG_SSP_SUPPORT)" \
++	GYP_ADDITIONAL_ARGS="-f make-linux" \
++	CJDNS_BUILD_TMPDIR="$(PKG_BUILD_DIR)/tmp" \
++	$(PKG_DO_VARS) \
++	exec ./do)
++endef
++else
+ define Build/Compile
+ 	$(INSTALL_DIR) $(PKG_BUILD_DIR)/tmp
+ 	(cd $(PKG_BUILD_DIR) && \
+@@ -91,6 +110,7 @@ define Build/Compile
+ 	$(PKG_DO_VARS) \
+ 	exec ./do)
+ endef
++endif
+ 
+ define Package/cjdns/install
+ 	$(INSTALL_DIR) \

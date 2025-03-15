@@ -1,0 +1,45 @@
+diff --git a/Makefile b/Makefile
+index 7c52acc..1c7a955 100644
+--- a/Makefile
++++ b/Makefile
+@@ -135,8 +135,10 @@ world: prepare $(target/stamp-compile) $(package/stamp-compile) $(package/stamp-
+ 	$(_SINGLE)$(SUBMAKE) -r json_overview_image_info
+ 	$(_SINGLE)$(SUBMAKE) -r checksum
+ ifneq ($(CONFIG_CCACHE),)
++ifneq ($(CONFIG_CCACHE),sccache)
+ 	$(STAGING_DIR_HOST)/bin/ccache -s
+ endif
++endif
+ 
+ .PHONY: clean dirclean prereq prepare world package/symlinks package/symlinks-install package/symlinks-clean
+ 
+diff --git a/rules.mk b/rules.mk
+index 54df407..0351438 100644
+--- a/rules.mk
++++ b/rules.mk
+@@ -338,12 +338,19 @@ export HOSTCC_NOCACHE
+ export HOSTCXX_NOCACHE
+ 
+ ifneq ($(CONFIG_CCACHE),)
+-  TARGET_CC:= ccache $(TARGET_CC)
+-  TARGET_CXX:= ccache $(TARGET_CXX)
+-  HOSTCC:= ccache $(HOSTCC)
+-  HOSTCXX:= ccache $(HOSTCXX)
+-  export CCACHE_BASEDIR:=$(TOPDIR)
+-  export CCACHE_DIR:=$(if $(call qstrip,$(CONFIG_CCACHE_DIR)),$(call qstrip,$(CONFIG_CCACHE_DIR)),$(TOPDIR)/.ccache)
++  ifeq ($(CONFIG_CCACHE),sccache)
++    TARGET_CC:= sccache $(TARGET_CC)
++    TARGET_CXX:= sccache $(TARGET_CXX)
++    HOSTCC:= sccache $(HOSTCC)
++    HOSTCXX:= sccache $(HOSTCXX)
++  else
++    TARGET_CC:= ccache $(TARGET_CC)
++    TARGET_CXX:= ccache $(TARGET_CXX)
++    HOSTCC:= ccache $(HOSTCC)
++    HOSTCXX:= ccache $(HOSTCXX)
++    export CCACHE_BASEDIR:=$(TOPDIR)
++    export CCACHE_DIR:=$(if $(call qstrip,$(CONFIG_CCACHE_DIR)),$(call qstrip,$(CONFIG_CCACHE_DIR)),$(TOPDIR)/.ccache)
++  endif
+   export CCACHE_COMPILERCHECK:=%compiler% -dumpmachine; %compiler% -dumpversion
+ endif
+ 
