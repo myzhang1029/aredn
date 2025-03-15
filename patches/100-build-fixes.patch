@@ -1,0 +1,67 @@
+Index: b/tools/mkimage/patches/200-fix-mach-build.patch
+===================================================================
+--- /dev/null
++++ b/tools/mkimage/patches/200-fix-mach-build.patch
+@@ -0,0 +1,24 @@
++--- a/tools/imagetool.h
+++++ b/tools/imagetool.h
++@@ -288,7 +288,7 @@
++ 	} while (0)
++ #define SECTION(name)   __attribute__((section("__DATA, " #name)))
++ 
++-struct image_type_params **__start_image_type, **__stop_image_type;
+++extern struct image_type_params **__start_image_type, **__stop_image_type;
++ #else
++ #define INIT_SECTION(name) /* no-op for ELF */
++ #define SECTION(name)   __attribute__((section(#name)))
++--- a/tools/imagetool.c
+++++ b/tools/imagetool.c
++@@ -9,6 +9,10 @@
++ 
++ #include <image.h>
++ 
+++#if defined(__MACH__)
+++struct image_type_params **__start_image_type, **__stop_image_type;
+++#endif
+++
++ struct image_type_params *imagetool_get_type(int type)
++ {
++ 	struct image_type_params **curr;
+Index: b/toolchain/gdb/patches/160-mach-build.patch
+===================================================================
+--- /dev/null
++++ b/toolchain/gdb/patches/160-mach-build.patch
+@@ -0,0 +1,14 @@
++--- a/zlib/zutil.c
+++++ b/zlib/zutil.c
++@@ -5,10 +5,10 @@
++ 
++ /* @(#) $Id$ */
++ 
++-#include "zutil.h"
++ #ifndef Z_SOLO
++ #  include "gzguts.h"
++ #endif
+++#include "zutil.h"
++ 
++ z_const char * const z_errmsg[10] = {
++     (z_const char *)"need dictionary",     /* Z_NEED_DICT       2  */
+Index: b/toolchain/gcc/patches-13.x/160-mach-build.patch
+===================================================================
+--- /dev/null
++++ b/toolchain/gcc/patches-13.x/160-mach-build.patch
+@@ -0,0 +1,14 @@
++--- a/zlib/zutil.c
+++++ b/zlib/zutil.c
++@@ -5,10 +5,10 @@
++ 
++ /* @(#) $Id$ */
++ 
++-#include "zutil.h"
++ #ifndef Z_SOLO
++ #  include "gzguts.h"
++ #endif
+++#include "zutil.h"
++ 
++ z_const char * const z_errmsg[10] = {
++     (z_const char *)"need dictionary",     /* Z_NEED_DICT       2  */
