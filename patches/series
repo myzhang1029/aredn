@@ -50,5 +50,3 @@
 800-upgrade-compatibility.patch
 801-mikrotik-lhg-variants.patch
 802-gpio-typo.patch
-901-mbedtls-unused.patch
-902-host-command-hard-link.patch
