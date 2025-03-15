@@ -13,4 +13,4 @@ Please add patches in the folowing structure
 - 6xx - build system changes to support this build system
 - 7xx - AREDN specific
 - 8xx - other
-- 9xx - reserved
+- 9xx - to be early-applied once openwrt is cloned
