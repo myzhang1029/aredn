@@ -1,0 +1,14 @@
+diff --git a/include/prereq.mk b/include/prereq.mk
+index 1039c55..3a7594c 100644
+--- a/include/prereq.mk
++++ b/include/prereq.mk
+@@ -113,7 +113,8 @@ define SetupHostCommand
+ 						[ -x "$(STAGING_DIR_HOST)/bin/$(strip $(1))" ] && exit 0 \
+ 						;; \
+ 				esac; \
+-				ln -sf "$$$$$$$$bin" "$(STAGING_DIR_HOST)/bin/$(strip $(1))"; \
++				rm -f "$(STAGING_DIR_HOST)/bin/$(strip $(1))"; \
++				ln "$$$$$$$$bin" "$(STAGING_DIR_HOST)/bin/$(strip $(1))" || ln -s "$$$$$$$$bin" "$(STAGING_DIR_HOST)/bin/$(strip $(1))"; \
+ 				exit 1; \
+ 			fi; \
+ 		fi; \
