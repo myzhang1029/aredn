@@ -4,6 +4,7 @@
 
 # Files created during make
 .stamp*
+files/etc/mesh-release
 firmware
 openwrt/
 
