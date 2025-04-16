@@ -52,7 +52,7 @@ config include
 
 config rule
        option src              wan
-       option dest_port        2222
+       option dest_port        22
        option proto    tcp
        option target   ACCEPT
 
@@ -66,7 +66,7 @@ config rule
 
 config rule
        option src              wifi
-       option dest_port        2222
+       option dest_port        22
        option proto    tcp
        option target   ACCEPT
 
@@ -79,6 +79,12 @@ config rule
 config rule
        option src              wifi
        option dest_port        80
+       option proto    tcp
+       option target   ACCEPT
+
+config rule
+       option src              wifi
+       option dest_port        443
        option proto    tcp
        option target   ACCEPT
 
