@@ -1,4 +1,3 @@
-
 config defaults
 	option syn_flood '1'
 	option input 'ACCEPT'
@@ -139,7 +138,7 @@ config rule
 
 config rule
 	option src 'wifi'
-	option dest_port '2222'
+	option dest_port '22'
 	option proto 'tcp'
 	option target 'ACCEPT'
 
@@ -162,14 +161,8 @@ config rule
 	option target 'ACCEPT'
 
 config rule
-	option src 'wifi'
-	option dest_port '23'
-	option proto 'tcp'
-	option target 'ACCEPT'
-
-config rule
 	option src 'dtdlink'
-	option dest_port '2222'
+	option dest_port '22'
 	option proto 'tcp'
 	option target 'ACCEPT'
 
@@ -187,19 +180,19 @@ config rule
 
 config rule
 	option src 'dtdlink'
+	option dest_port '443'
+	option proto 'tcp'
+	option target 'ACCEPT'
+
+config rule
+	option src 'dtdlink'
 	option dest_port '698'
 	option proto 'udp'
 	option target 'ACCEPT'
 
 config rule
-	option src 'dtdlink'
-	option dest_port '23'
-	option proto 'tcp'
-	option target 'ACCEPT'
-
-config rule
 	option src 'vpn'
-	option dest_port '2222'
+	option dest_port '22'
 	option proto 'tcp'
 	option target 'ACCEPT'
 
@@ -217,14 +210,14 @@ config rule
 
 config rule
 	option src 'vpn'
-	option dest_port '698'
-	option proto 'udp'
+	option dest_port '443'
+	option proto 'tcp'
 	option target 'ACCEPT'
 
 config rule
 	option src 'vpn'
-	option dest_port '23'
-	option proto 'tcp'
+	option dest_port '698'
+	option proto 'udp'
 	option target 'ACCEPT'
 
 config rule
