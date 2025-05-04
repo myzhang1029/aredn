@@ -115,6 +115,9 @@ feeds-update: stamp-clean-feeds-updated .stamp-feeds-updated
 	cd $(OPENWRT_DIR); ./scripts/feeds install ffmpeg
 	cd $(OPENWRT_DIR); ./scripts/feeds install acme-common
 	cd $(OPENWRT_DIR); ./scripts/feeds install acme-acmesh
+	cd $(OPENWRT_DIR); ./scripts/feeds install gdbserver
+	cd $(OPENWRT_DIR); ./scripts/feeds install gperf
+	cd $(OPENWRT_DIR); ./scripts/feeds install valgrind
 	touch $@
 
 # prepare patch
