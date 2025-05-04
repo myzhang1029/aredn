@@ -115,6 +115,10 @@ feeds-update: stamp-clean-feeds-updated .stamp-feeds-updated
 	cd $(OPENWRT_DIR); ./scripts/feeds install inotifywait
 	cd $(OPENWRT_DIR); ./scripts/feeds install -a -p morse
 	cd $(OPENWRT_DIR); ./scripts/feeds install -p arednpackages morsemicro-bcf
+	cd $(OPENWRT_DIR); ./scripts/feeds install -f -p morse iwinfo
+	cd $(OPENWRT_DIR); ./scripts/feeds install -f -p morse libiwinfo
+	cd $(OPENWRT_DIR); ./scripts/feeds install acme-common
+	cd $(OPENWRT_DIR); ./scripts/feeds install acme-acmesh
 	touch $@
 
 # prepare patch
