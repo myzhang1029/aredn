@@ -8,6 +8,7 @@
 102-no-socat-init.patch
 103-sysctl.patch
 104-firewall-delay.patch
+105-mbedtls-unused.patch
 601-sccache.patch
 610-mikrotik-sysupgrade-v7.patch
 701-extended-spectrum.patch
