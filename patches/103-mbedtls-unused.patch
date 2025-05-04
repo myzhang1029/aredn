@@ -1,0 +1,23 @@
+Index: b/package/libs/mbedtls/patches/901-gate-unused.patch
+===================================================================
+--- /dev/null
++++ b/package/libs/mbedtls/patches/901-gate-unused.patch
+@@ -0,0 +1,18 @@
++--- a/library/ssl_tls13_server.c
+++++ b/library/ssl_tls13_server.c
++@@ -989,6 +989,7 @@
++ }
++ #endif /* MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_SOME_EPHEMERAL_ENABLED */
++ 
+++#if defined(MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_EPHEMERAL_ENABLED) || defined(MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_PSK_ENABLED)
++ MBEDTLS_CHECK_RETURN_CRITICAL
++ static int ssl_tls13_client_hello_has_exts(mbedtls_ssl_context *ssl,
++                                            int exts_mask)
++@@ -996,6 +997,7 @@
++     int masked = ssl->handshake->received_extensions & exts_mask;
++     return masked == exts_mask;
++ }
+++#endif
++ 
++ #if defined(MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_EPHEMERAL_ENABLED)
++ MBEDTLS_CHECK_RETURN_CRITICAL
