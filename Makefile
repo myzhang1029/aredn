@@ -113,6 +113,8 @@ feeds-update: stamp-clean-feeds-updated .stamp-feeds-updated
 	cd $(OPENWRT_DIR); ./scripts/feeds install rpcapd
 	cd $(OPENWRT_DIR); ./scripts/feeds install usbutils
 	cd $(OPENWRT_DIR); ./scripts/feeds install ffmpeg
+	cd $(OPENWRT_DIR); ./scripts/feeds install acme-common
+	cd $(OPENWRT_DIR); ./scripts/feeds install acme-acmesh
 	touch $@
 
 # prepare patch
