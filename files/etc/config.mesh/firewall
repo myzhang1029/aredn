@@ -178,6 +178,12 @@ config rule
 
 config rule
 	option src 'wifi'
+	option dest_port '443'
+	option proto 'tcp'
+	option target 'ACCEPT'
+
+config rule
+	option src 'wifi'
 	option dest_port '23'
 	option proto 'tcp'
 	option target 'ACCEPT'
@@ -202,6 +208,12 @@ config rule
 
 config rule
 	option src 'dtdlink'
+	option dest_port '443'
+	option proto 'tcp'
+	option target 'ACCEPT'
+
+config rule
+	option src 'dtdlink'
 	option dest_port '23'
 	option proto 'tcp'
 	option target 'ACCEPT'
@@ -221,6 +233,12 @@ config rule
 config rule
 	option src 'vpn'
 	option dest_port '80'
+	option proto 'tcp'
+	option target 'ACCEPT'
+
+config rule
+	option src 'vpn'
+	option dest_port '443'
 	option proto 'tcp'
 	option target 'ACCEPT'
 
