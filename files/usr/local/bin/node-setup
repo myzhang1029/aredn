@@ -1204,7 +1204,7 @@ if h and e then
             e:write(line .. "\n")
         end
     end
-    
+
     h:close()
     e:close()
     ah:close()
@@ -1270,7 +1270,7 @@ if nixio.fs.access("/etc/config.mesh/olsrd", "r") then
                 end
             )
         end
-    
+
         if nc:get("aredn", "@wan[0]", "olsrd_gw") == "1" then
             of:write("config LoadPlugin\n\toption library 'olsrd_dyn_gw.so.0.5'\n\toption Interval '60'\n\tlist Ping '8.8.8.8'\n\tlist Ping '8.8.4.4'\n\n")
         end
@@ -1298,7 +1298,7 @@ if nixio.fs.access("/etc/config.mesh/olsrd", "r") then
         end
         of:write("\n")
         as:close()
-    
+
         -- add all the tunnel interfaces
         if vtunclients + vtunservers + wgclients + wgservers > 0 then
             for weight, ifaces in pairs(tun_weights)
@@ -1413,6 +1413,7 @@ local config_special = {
     web_access = c:get("aredn", "@wan[0]", "web_access"),
     ssh_access = c:get("aredn", "@wan[0]", "ssh_access"),
     telnet_access = c:get("aredn", "@wan[0]", "telnet_access"),
+    wan_https = c:get("aredn", "@wan[0]", "wan_https"),
     lan_dhcp_route = c:get("aredn", "@wan[0]", "lan_dhcp_route"),
     olsrd_gw = c:get("aredn", "@wan[0]", "olsrd_gw"),
     mesh_wan_gw = c:get("aredn", "@wan[0]", "mesh_wan_gw"),
@@ -1472,7 +1473,7 @@ do
             if oc:get("aredn", "@watchdog[0]", "daily") ~= config_special.watchdog_daily then
                 changes.manager = true
             end
-            if oc:get("aredn", "@wan[0]", "web_access") ~= config_special.web_access or oc:get("aredn", "@wan[0]", "ssh_access") ~= config_special.ssh_access or oc:get("aredn", "@wan[0]", "telnet_access") ~= config_special.telnet_access then
+            if oc:get("aredn", "@wan[0]", "web_access") ~= config_special.web_access or oc:get("aredn", "@wan[0]", "ssh_access") ~= config_special.ssh_access or oc:get("aredn", "@wan[0]", "telnet_access") ~= config_special.telnet_access or oc:get("aredn", "@wan[0]", "wan_https") ~= config_special.wan_https then
                 changes.firewall = true
             end
             if oc:get("aredn", "@poe[0]", "passthrough") ~= config_special.power_eth then

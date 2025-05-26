@@ -125,6 +125,7 @@ local config = {
             mesh_wan_gw = 0,
             ssh_access = 1,
             telnet_access = 1,
+            wan_https = 0,
             web_access = 1
         },
         watchdog = {
