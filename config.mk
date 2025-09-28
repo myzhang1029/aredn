@@ -16,4 +16,5 @@ PRIVATE_BUILD_PACKAGES=http://downloads.arednmesh.org/snapshots
 
 # These options are for more complex changes
 SHELL:=$(shell which bash)
-TARGET=ipq40xx-mikrotik
+#TARGET=ipq40xx-mikrotik
+TARGET=mediatek-filogic
