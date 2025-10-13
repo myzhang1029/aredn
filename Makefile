@@ -118,6 +118,8 @@ feeds-update: stamp-clean-feeds-updated .stamp-feeds-updated
 	cd $(OPENWRT_DIR); ./scripts/feeds install -f -p morse libiwinfo
 	cd $(OPENWRT_DIR); ./scripts/feeds install acme-common
 	cd $(OPENWRT_DIR); ./scripts/feeds install acme-acmesh
+	cd $(OPENWRT_DIR); ./scripts/feeds install vim-full
+	cd $(OPENWRT_DIR); ./scripts/feeds install bash
 	touch $@
 
 # prepare patch
