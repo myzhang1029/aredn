@@ -36,8 +36,10 @@ const PIDOF = "/bin/pidof";
 const REBOOT = "/sbin/reboot";
 
 const WATCHDOG_IOCTL_BASE = ord("W");
+const WDIOC_GETSUPPORT = 0;
 const WDIOC_SETTIMEOUT = 6;
 const WDIOC_GETTIMEOUT = 7;
+const WDIOC_GETTIMELEFT = 10;
 
 let tick = 60;
 const pingTimeout = 3;
@@ -185,14 +187,20 @@ function main()
     }
     
     if (success) {
+        const prev_timeleft = wd.ioctl(fs.IOC_DIR_READ, WATCHDOG_IOCTL_BASE, WDIOC_GETTIMELEFT, 4);
+        log.syslog(log.LOG_DEBUG, `old time left=${prev_timeleft}`);
         wd.write("1");
         wd.flush();
+        const new_timeleft = wd.ioctl(fs.IOC_DIR_READ, WATCHDOG_IOCTL_BASE, WDIOC_GETTIMELEFT, 4);
+        log.syslog(log.LOG_DEBUG, `wrote and flushed 1 to wd, new time left=${new_timeleft}`);
     }
     else {
         log.syslog(log.LOG_ERR, "failed");
     }
 
-    return waitForTicks(max(0, tick - (clock(true)[0] - now)));
+    const wft_time = max(0, tick - (clock(true)[0] - now));
+    log.syslog(log.LOG_DEBUG, `waitForTicks arg=${wft_time}`);
+    return waitForTicks(wft_time);
 }
 
 // Gracefully shutdown the watchdog
@@ -217,10 +225,14 @@ return waitForTicks(max(0, startupDelay - clock(true)[0]), function() {
         return exitApp();
     }
 
+    const info = struct.unpack("II32s", wd.ioctl(fs.IOC_DIR_READ, WATCHDOG_IOCTL_BASE, WDIOC_GETSUPPORT, 40));
+    log.syslog(log.LOG_DEBUG, `watchdog info ${info}`);
+
     // We cannot reliably set the timeout so we are forced to work with whatever the default value is.
     // If the value is too small we disable the watchdog.
     const gettime = struct.unpack("I", wd.ioctl(fs.IOC_DIR_READ, WATCHDOG_IOCTL_BASE, WDIOC_GETTIMEOUT, 4))[0];
-    tick = min(tick, int(gettime / 2));
+    log.syslog(log.LOG_DEBUG, `wd.ioctl returned gettime=${gettime}`);
+    tick = min(tick, int(gettime / 4));
     if (tick < minWatchdogTimeout) {
         log.syslog(log.LOG_ERROR, `tick ${tick} < ${minWatchdogTimeout}, disabling watchdog`);
         wd.write("V");
