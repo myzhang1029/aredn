@@ -1,0 +1,110 @@
+Index: openwrt/target/linux/ipq40xx/config-6.6
+===================================================================
+--- openwrt.orig/target/linux/ipq40xx/config-6.6
++++ openwrt/target/linux/ipq40xx/config-6.6
+@@ -535,6 +535,7 @@ CONFIG_USE_OF=y
+ CONFIG_VFP=y
+ CONFIG_VFPv3=y
+ CONFIG_WATCHDOG_CORE=y
++CONFIG_WATCHDOG_SYSFS=y
+ CONFIG_XPS=y
+ CONFIG_XXHASH=y
+ CONFIG_XZ_DEC_ARM=y
+Index: openwrt/package/kernel/linux/patches/000-watchdog-debug.patch
+===================================================================
+--- /dev/null
++++ openwrt/package/kernel/linux/patches/000-watchdog-debug.patch
+@@ -0,0 +1,72 @@
++--- linux-6.6.104/drivers/watchdog/qcom-wdt.c	2025-09-04 09:30:29.000000000 -0400
+++++ linux-6.6.104/drivers/watchdog/qcom-wdt.c	2025-10-14 10:42:04.934425466 -0400
++@@ -11,6 +11,7 @@
++ #include <linux/of.h>
++ #include <linux/platform_device.h>
++ #include <linux/watchdog.h>
+++#include <linux/printk.h>
++ 
++ enum wdt_reg {
++ 	WDT_RST,
++@@ -72,6 +73,7 @@
++ 
++ static int qcom_wdt_start(struct watchdog_device *wdd)
++ {
+++    printk(KERN_ERR "qcom_wdt_start %pS\n", wdd);
++ 	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
++ 	unsigned int bark = wdd->timeout - wdd->pretimeout;
++ 
++@@ -80,11 +82,13 @@
++ 	writel(bark * wdt->rate, wdt_addr(wdt, WDT_BARK_TIME));
++ 	writel(wdd->timeout * wdt->rate, wdt_addr(wdt, WDT_BITE_TIME));
++ 	writel(QCOM_WDT_ENABLE, wdt_addr(wdt, WDT_EN));
+++    printk(KERN_ERR "qcom_wdt_start %pS\n", wdd);
++ 	return 0;
++ }
++ 
++ static int qcom_wdt_stop(struct watchdog_device *wdd)
++ {
+++    printk(KERN_ERR "qcom_wdt_stop %pS\n", wdd);
++ 	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
++ 
++ 	writel(0, wdt_addr(wdt, WDT_EN));
++@@ -93,6 +97,7 @@
++ 
++ static int qcom_wdt_ping(struct watchdog_device *wdd)
++ {
+++    printk(KERN_ERR "qcom_wdt_ping %pS\n", wdd);
++ 	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
++ 
++ 	writel(1, wdt_addr(wdt, WDT_RST));
++@@ -102,6 +107,7 @@
++ static int qcom_wdt_set_timeout(struct watchdog_device *wdd,
++ 				unsigned int timeout)
++ {
+++    printk(KERN_ERR "qcom_wdt_set_timeout %pS\n", wdd);
++ 	wdd->timeout = timeout;
++ 	return qcom_wdt_start(wdd);
++ }
++@@ -109,6 +115,7 @@
++ static int qcom_wdt_set_pretimeout(struct watchdog_device *wdd,
++ 				   unsigned int timeout)
++ {
+++    printk(KERN_ERR "qcom_wdt_set_pretimeout %pS\n", wdd);
++ 	wdd->pretimeout = timeout;
++ 	return qcom_wdt_start(wdd);
++ }
++@@ -116,6 +123,7 @@
++ static int qcom_wdt_restart(struct watchdog_device *wdd, unsigned long action,
++ 			    void *data)
++ {
+++    printk(KERN_ERR "qcom_wdt_restart %pS\n", wdd);
++ 	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
++ 	u32 timeout;
++ 
++@@ -142,6 +150,7 @@
++ 
++ static int qcom_wdt_is_running(struct watchdog_device *wdd)
++ {
+++    printk(KERN_ERR "qcom_wdt_is_running %pS\n", wdd);
++ 	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
++ 
++ 	return (readl(wdt_addr(wdt, WDT_EN)) & QCOM_WDT_ENABLE);
+Index: openwrt/package/kernel/linux/Makefile
+===================================================================
+--- openwrt.orig/package/kernel/linux/Makefile
++++ openwrt/package/kernel/linux/Makefile
+@@ -30,16 +30,9 @@ ifeq ($(DUMP),)
+   -include $(LINUX_DIR)/.config
+ endif
+ 
+-define Build/Prepare
+-	mkdir -p $(PKG_BUILD_DIR)
+-endef
+-
+ define Build/Configure
+ endef
+ 
+-define Build/Quilt
+-endef
+-
+ define Build/Compile
+ endef
+ 
