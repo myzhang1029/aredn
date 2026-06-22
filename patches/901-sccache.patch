@@ -14,10 +14,10 @@ index 7c52acc..1c7a955 100644
  .PHONY: clean dirclean prereq prepare world package/symlinks package/symlinks-install package/symlinks-clean
  
 diff --git a/rules.mk b/rules.mk
-index 54df407..0351438 100644
+index 0e9c178..38b6e0a 100644
 --- a/rules.mk
 +++ b/rules.mk
-@@ -338,12 +338,19 @@ export HOSTCC_NOCACHE
+@@ -345,13 +345,20 @@ export HOSTCC_NOCACHE
  export HOSTCXX_NOCACHE
  
  ifneq ($(CONFIG_CCACHE),)
@@ -25,6 +25,7 @@ index 54df407..0351438 100644
 -  TARGET_CXX:= ccache $(TARGET_CXX)
 -  HOSTCC:= ccache $(HOSTCC)
 -  HOSTCXX:= ccache $(HOSTCXX)
+-  export CCACHE_NOCOMPRESS:=true
 -  export CCACHE_BASEDIR:=$(TOPDIR)
 -  export CCACHE_DIR:=$(if $(call qstrip,$(CONFIG_CCACHE_DIR)),$(call qstrip,$(CONFIG_CCACHE_DIR)),$(TOPDIR)/.ccache)
 +  ifeq ($(CONFIG_CCACHE),sccache)
@@ -37,9 +38,10 @@ index 54df407..0351438 100644
 +    TARGET_CXX:= ccache $(TARGET_CXX)
 +    HOSTCC:= ccache $(HOSTCC)
 +    HOSTCXX:= ccache $(HOSTCXX)
++    export CCACHE_NOCOMPRESS:=true
 +    export CCACHE_BASEDIR:=$(TOPDIR)
 +    export CCACHE_DIR:=$(if $(call qstrip,$(CONFIG_CCACHE_DIR)),$(call qstrip,$(CONFIG_CCACHE_DIR)),$(TOPDIR)/.ccache)
 +  endif
-   export CCACHE_COMPILERCHECK:=%compiler% -dumpmachine; %compiler% -dumpversion
  endif
  
+ TARGET_CONFIGURE_OPTS = \
