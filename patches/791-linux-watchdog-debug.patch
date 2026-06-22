@@ -1,7 +1,7 @@
-Index: openwrt/target/linux/ipq40xx/config-6.6
+Index: openwrt/target/linux/ipq40xx/config-6.12
 ===================================================================
---- openwrt.orig/target/linux/ipq40xx/config-6.6
-+++ openwrt/target/linux/ipq40xx/config-6.6
+--- openwrt.orig/target/linux/ipq40xx/config-6.12
++++ openwrt/target/linux/ipq40xx/config-6.12
 @@ -535,6 +535,7 @@ CONFIG_USE_OF=y
  CONFIG_VFP=y
  CONFIG_VFPv3=y
