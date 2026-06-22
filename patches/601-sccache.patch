@@ -40,27 +40,14 @@ Index: b/tools/Makefile
  ifneq ($(CONFIG_CCACHE)$(CONFIG_SDK),)
 +ifneq ($(CONFIG_CCACHE),sccache)
  $(foreach tool, $(filter-out zstd zlib xz pkgconf patch ninja meson libressl expat cmake,$(tools-y)), $(eval $(curdir)/$(tool)/compile += $(curdir)/ccache/compile))
- tools-y += ccache
- $(curdir)/ccache/compile := $(curdir)/cmake/compile
+ tools-y += ccache xxhash
+ $(curdir)/xxhash/compile := $(curdir)/cmake/compile
+ $(curdir)/ccache/compile := $(curdir)/xxhash/compile
  endif
 +endif
  
  # in case there is no patch tool on the host we need to make patch tool a
  # dependency for tools which have patches directory
-Index: b/tools/expat/Makefile
-===================================================================
---- a/tools/expat/Makefile
-+++ b/tools/expat/Makefile
-@@ -19,7 +19,9 @@ HOST_BUILD_PARALLEL:=1
- 
- include $(INCLUDE_DIR)/host-build.mk
- 
-+ifneq ($(CONFIG_CCACHE),sccache)
- HOSTCC := $(HOSTCC_NOCACHE)
-+endif
- 
- HOST_CONFIGURE_ARGS += \
- 	--disable-shared \
 Index: b/tools/sed/Makefile
 ===================================================================
 --- a/tools/sed/Makefile
@@ -313,32 +300,6 @@ Index: b/feeds/packages/devel/scons/scons.mk
  	CFLAGS="$(TARGET_CFLAGS) $(EXTRA_CFLAGS)" \
  	CXXFLAGS="$(TARGET_CXXFLAGS) $(EXTRA_CXXFLAGS)" \
  	CPPFLAGS="$(TARGET_CPPFLAGS) $(EXTRA_CPPFLAGS)" \
-Index: b/feeds/packages/lang/golang/golang/Makefile
-===================================================================
---- a/feeds/packages/lang/golang/golang/Makefile
-+++ b/feeds/packages/lang/golang/golang/Makefile
-@@ -250,12 +250,21 @@ endif
- 
- $(eval $(call GoCompiler/AddProfile,Host,$(HOST_BUILD_DIR),$(HOST_GO_PREFIX),$(HOST_GO_VERSION_ID),$(GO_HOST_OS_ARCH),$(HOST_GO_INSTALL_SUFFIX)))
- 
-+ifeq ($(CONFIG_CCACHE),sccache)
-+HOST_GO_VARS= \
-+	GOHOSTARCH="$(GO_HOST_ARCH)" \
-+	GOCACHE="$(GO_BUILD_CACHE_DIR)" \
-+	GOENV=off \
-+	CC="$(HOSTCC)" \
-+	CXX="$(HOSTCXX)"
-+else
- HOST_GO_VARS= \
- 	GOHOSTARCH="$(GO_HOST_ARCH)" \
- 	GOCACHE="$(GO_BUILD_CACHE_DIR)" \
- 	GOENV=off \
- 	CC="$(HOSTCC_NOCACHE)" \
- 	CXX="$(HOSTCXX_NOCACHE)"
-+endif
- 
- define Host/Configure
- 	$(call GoCompiler/Bootstrap/CheckHost,$(BOOTSTRAP_GO_VALID_OS_ARCH))
 Index: b/feeds/packages/lang/rust/rust-host-build.mk
 ===================================================================
 --- a/feeds/packages/lang/rust/rust-host-build.mk
